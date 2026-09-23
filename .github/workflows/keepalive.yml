@@ -1,18 +1,31 @@
-# GitHub يُطفئ الجدولة في المستودع العامّ بعد ٦٠ يومًا بلا نشاط · هذا يعيد تفعيلها شهريًّا بلا commit
+# GitHub يُطفئ كل workflow مجدول في المستودع العامّ بعد ٦٠ يومًا بلا نشاط في المستودع (وهذا الملف نفسه مجدول)
+# وتشغيل workflow أو استدعاء enable لا يُعدّ نشاطًا · فهنا commit حقيقي مرّتين شهريًّا (heartbeat.txt)
+# ثم إعادة تفعيل الملفّين احتياطًا · الفاصل ١٤ يومًا فلا يقترب المستودع من حدّ الستين
 name: ReapX uptime keepalive
 on:
   schedule:
     - cron: "17 3 1,15 * *"
   workflow_dispatch:
 permissions:
+  contents: write
   actions: write
 jobs:
   keepalive:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
-      - name: إعادة تفعيل جدولة المراقبة
+      - name: commit نبضة + إعادة تفعيل الجدولة
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/uptime.yml/enable" && echo "✓ الجدولة مفعّلة"
+          set -eu
+          f=heartbeat.txt
+          content=$(printf 'ReapX uptime keepalive %s\n' "$(date -u +%FT%TZ)" | base64 -w0)
+          sha=$(gh api "repos/${GITHUB_REPOSITORY}/contents/${f}" --jq .sha 2>/dev/null || true)
+          if [ -n "$sha" ]; then
+            gh api -X PUT "repos/${GITHUB_REPOSITORY}/contents/${f}" -f message="keepalive $(date -u +%F)" -f content="$content" -f sha="$sha" --jq .commit.sha
+          else
+            gh api -X PUT "repos/${GITHUB_REPOSITORY}/contents/${f}" -f message="keepalive $(date -u +%F)" -f content="$content" --jq .commit.sha
+          fi
+          for w in uptime.yml keepalive.yml; do gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/${w}/enable" && echo "✓ ${w} مفعّل"; done
