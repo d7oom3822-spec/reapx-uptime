@@ -1,0 +1,18 @@
+# GitHub يُطفئ الجدولة في المستودع العامّ بعد ٦٠ يومًا بلا نشاط · هذا يعيد تفعيلها شهريًّا بلا commit
+name: ReapX uptime keepalive
+on:
+  schedule:
+    - cron: "17 3 1,15 * *"
+  workflow_dispatch:
+permissions:
+  actions: write
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: إعادة تفعيل جدولة المراقبة
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/uptime.yml/enable" && echo "✓ الجدولة مفعّلة"
