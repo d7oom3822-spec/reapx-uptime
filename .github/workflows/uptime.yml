@@ -4,7 +4,8 @@
 name: ReapX uptime
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    # 3,8,13,…,58 · بعيدًا عن الدقيقة 0 التي يؤخّر GitHub تشغيلاتها أو يُسقطها وقت الضغط
+    - cron: "3-58/5 * * * *"
   workflow_dispatch:
 permissions:
   contents: read
