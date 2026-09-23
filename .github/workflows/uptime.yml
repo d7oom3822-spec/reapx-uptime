@@ -7,6 +7,11 @@ on:
     # 3,8,13,…,58 · بعيدًا عن الدقيقة 0 التي يؤخّر GitHub تشغيلاتها أو يُسقطها وقت الضغط
     - cron: "3-58/5 * * * *"
   workflow_dispatch:
+    inputs:
+      test_failure:
+        description: "اختبار التنبيه: يُفشل التشغيل عمدًا ليصل بريد Run failed (لا يفحص الروابط)"
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -17,6 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
+      - name: اختبار التنبيه (يدوي فقط)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_failure }}
+        run: |
+          echo "::error title=اختبار تنبيه::تشغيل مقصود للتأكّد من وصول بريد Run failed · الخدمات لم تُفحص"
+          exit 1
       - name: فحص الخدمة واللوحة وصفحة الزبون والشاشة
         shell: bash
         run: |
